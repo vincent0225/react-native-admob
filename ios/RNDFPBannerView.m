@@ -49,10 +49,11 @@
 }
 
 -(void)loadBanner {
-    if (_adUnitID && _bannerSize) {
+    if (_adUnitID && _bannerSize && _customTarget) {
         GADAdSize size = [self getAdSizeFromString:_bannerSize];
         _bannerView = [[DFPBannerView alloc] initWithAdSize:size];
         [_bannerView setAppEventDelegate:self]; //added Admob event dispatch listener
+        [_bannerView setAdSizeDelegate:self];
         if(!CGRectEqualToRect(self.bounds, _bannerView.bounds)) {
             if (self.onSizeChange) {
                 self.onSizeChange(@{
@@ -64,7 +65,7 @@
         _bannerView.delegate = self;
         _bannerView.adUnitID = _adUnitID;
         _bannerView.rootViewController = [UIApplication sharedApplication].delegate.window.rootViewController;
-        GADRequest *request = [GADRequest request];
+        DFPRequest *request = [DFPRequest request];
         if(_testDeviceID) {
             if([_testDeviceID isEqualToString:@"EMULATOR"]) {
                 request.testDevices = @[kGADSimulatorID];
@@ -72,7 +73,10 @@
                 request.testDevices = @[_testDeviceID];
             }
         }
-
+        if(_customTarget) {
+            request.customTargeting = _customTarget;
+        }
+        
         [_bannerView loadRequest:request];
     }
 }
@@ -121,16 +125,26 @@ didReceiveAppEvent:(NSString *)name
         [self loadBanner];
     }
 }
+- (void)setCustomTarget:(NSDictionary *)customTarget
+{
+    if(![customTarget isEqual:_customTarget]) {
+        _customTarget = customTarget;
+        if (_bannerView) {
+            [_bannerView removeFromSuperview];
+        }
+        [self loadBanner];
+    }
+}
 
 -(void)layoutSubviews
 {
-    [super layoutSubviews ];
-
-    _bannerView.frame = CGRectMake(
-                                   self.bounds.origin.x,
-                                   self.bounds.origin.x,
-                                   _bannerView.frame.size.width,
-                                   _bannerView.frame.size.height);
+    [super layoutSubviews];
+    
+    self.frame = CGRectMake(
+                            self.bounds.origin.x,
+                            self.bounds.origin.x,
+                            _bannerView.frame.size.width,
+                            _bannerView.frame.size.height);
     [self addSubview:_bannerView];
 }
 
@@ -141,6 +155,14 @@ didReceiveAppEvent:(NSString *)name
 
 /// Tells the delegate an ad request loaded an ad.
 - (void)adViewDidReceiveAd:(DFPBannerView *)adView {
+    if(!CGRectEqualToRect(self.bounds, _bannerView.bounds)) {
+        if (self.onSizeChange) {
+            self.onSizeChange(@{
+                                @"width": [NSNumber numberWithFloat: _bannerView.bounds.size.width],
+                                @"height": [NSNumber numberWithFloat: _bannerView.bounds.size.height]
+                                });
+        }
+    }
     if (self.onAdViewDidReceiveAd) {
         self.onAdViewDidReceiveAd(@{});
     }
@@ -181,6 +203,17 @@ didFailToReceiveAdWithError:(GADRequestError *)error {
 - (void)adViewWillLeaveApplication:(DFPBannerView *)adView {
     if (self.onAdViewWillLeaveApplication) {
         self.onAdViewWillLeaveApplication(@{});
+    }
+}
+
+/// Called before the ad view changes to the new size.
+- (void)adView:(GADBannerView *)bannerView willChangeAdSizeTo:(GADAdSize)size {
+    CGSize nextSize = CGSizeFromGADAdSize(size);
+    if (self.onSizeChange) {
+        self.onSizeChange(@{
+                            @"width": [NSNumber numberWithFloat: nextSize.width],
+                            @"height": [NSNumber numberWithFloat: nextSize.height]
+                            });
     }
 }
 

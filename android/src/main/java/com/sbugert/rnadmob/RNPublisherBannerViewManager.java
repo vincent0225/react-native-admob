@@ -1,9 +1,13 @@
 package com.sbugert.rnadmob;
 
+import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
 import com.facebook.react.bridge.Arguments;
+import com.facebook.react.bridge.ReadableMap;
+import com.facebook.react.bridge.ReadableMapKeySetIterator;
+import com.facebook.react.bridge.ReadableType;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.common.MapBuilder;
 import com.facebook.react.uimanager.PixelUtil;
@@ -27,9 +31,11 @@ public class RNPublisherBannerViewManager extends SimpleViewManager<ReactViewGro
 
   public static final String PROP_BANNER_SIZE = "bannerSize";
   public static final String PROP_AD_UNIT_ID = "adUnitID";
+  public static final String PROP_CUSTOM_TARGET= "customTarget";
   public static final String PROP_TEST_DEVICE_ID = "testDeviceID";
 
   private String testDeviceID = null;
+  private ReadableMap customTarget;
 
   public enum Events {
     EVENT_SIZE_CHANGE("onSizeChange"),
@@ -78,7 +84,7 @@ public class RNPublisherBannerViewManager extends SimpleViewManager<ReactViewGro
     ReactViewGroup view = new ReactViewGroup(themedReactContext);
     attachNewAdView(view);
     return view;
-   }
+  }
 
   int viewID = -1;
   protected void attachNewAdView(final ReactViewGroup view) {
@@ -207,6 +213,12 @@ public class RNPublisherBannerViewManager extends SimpleViewManager<ReactViewGro
     this.testDeviceID = testDeviceID;
   }
 
+  @ReactProp(name = PROP_CUSTOM_TARGET)
+  public void setPropCustomTarget(final ReactViewGroup view, final ReadableMap customTarget) {
+    this.customTarget = customTarget;
+  }
+
+
   private void loadAd(final PublisherAdView adView) {
     if (adView.getAdSizes() != null && adView.getAdUnitId() != null) {
       PublisherAdRequest.Builder adRequestBuilder = new PublisherAdRequest.Builder();
@@ -217,6 +229,18 @@ public class RNPublisherBannerViewManager extends SimpleViewManager<ReactViewGro
           adRequestBuilder = adRequestBuilder.addTestDevice(testDeviceID);
         }
       }
+      if (customTarget != null){
+        ReadableMapKeySetIterator iterator = customTarget.keySetIterator();
+        while(iterator.hasNextKey()) {
+          String key = iterator.nextKey();
+          if (customTarget.getType(key) == ReadableType.String) {
+            adRequestBuilder = adRequestBuilder.addCustomTargeting(key, customTarget.getString(key));
+          } else {
+            Log.d("PublisherAdBanner", "Only String Custom Target was handled");
+          }
+        }
+      }
+
       PublisherAdRequest adRequest = adRequestBuilder.build();
       adView.loadAd(adRequest);
     }

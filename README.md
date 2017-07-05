@@ -1,3 +1,21 @@
+This fork add support for:
+- Custom Targeting
+- Multiple Ad Size
+
+```javascript
+<PublisherBanner
+  adUnitID="/6499/example/APIDemo/AdSizes"  
+  bannerSize="mediumRectangle|banner|120x20"
+  customTarget={{
+    dtype: 'phone',
+    adtype: 'banner',
+  }}
+/>
+
+// adUnitID is from https://github.com/googleads/googleads-mobile-android-examples
+```
+----
+
 [![npm version](https://badge.fury.io/js/react-native-admob.svg)](https://badge.fury.io/js/react-native-admob)
 ## react-native-admob
 
@@ -77,9 +95,9 @@ Under `protected List<ReactPackage> getPackages() {`:
 ### Usage
 
 ```javascript
-import { 
-  AdMobBanner, 
-  AdMobInterstitial, 
+import {
+  AdMobBanner,
+  AdMobInterstitial,
   PublisherBanner,
   AdMobRewarded
 } from 'react-native-admob'

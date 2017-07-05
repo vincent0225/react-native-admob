@@ -23,6 +23,8 @@ import com.google.android.gms.ads.AdSize;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.doubleclick.PublisherAdView;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public class RNPublisherBannerViewManager extends SimpleViewManager<ReactViewGroup> implements AppEventListener {
@@ -111,6 +113,12 @@ public class RNPublisherBannerViewManager extends SimpleViewManager<ReactViewGro
         adView.measure(width, height);
         adView.layout(left, top, left + width, top + height);
         mEventEmitter.receiveEvent(view.getId(), Events.EVENT_RECEIVE_AD.toString(), null);
+
+        // send measurements to js to style the AdView in react
+        WritableMap event = Arguments.createMap();
+        event.putDouble("width", adView.getAdSize().getWidth());
+        event.putDouble("height", adView.getAdSize().getHeight());
+        mEventEmitter.receiveEvent(view.getId(), Events.EVENT_SIZE_CHANGE.toString(), event);
       }
 
       @Override
@@ -163,9 +171,7 @@ public class RNPublisherBannerViewManager extends SimpleViewManager<ReactViewGro
 
   @ReactProp(name = PROP_BANNER_SIZE)
   public void setBannerSize(final ReactViewGroup view, final String sizeString) {
-    AdSize adSize = getAdSizeFromString(sizeString);
-    AdSize[] adSizes = new AdSize[1];
-    adSizes[0] = adSize;
+    // Multiple ad size . Ref: https://developers.google.com/mobile-ads-sdk/docs/dfp/android/banner#multiple_ad_sizes
 
     // store old ad unit ID (even if not yet present and thus null)
     PublisherAdView oldAdView = (PublisherAdView) view.getChildAt(0);
@@ -173,13 +179,19 @@ public class RNPublisherBannerViewManager extends SimpleViewManager<ReactViewGro
 
     attachNewAdView(view);
     PublisherAdView newAdView = (PublisherAdView) view.getChildAt(0);
-    newAdView.setAdSizes(adSizes);
+    List<AdSize> sizeList = new ArrayList<AdSize>();
+    for(String subString : sizeString.split("\\|")){ // cycle through the array
+      sizeList.add(getAdSizeFromString(subString));
+    }
+
+    newAdView.setAdSizes(sizeList.toArray(new AdSize[sizeList.size()]));
     newAdView.setAdUnitId(adUnitId);
 
     // send measurements to js to style the AdView in react
     int width;
     int height;
     WritableMap event = Arguments.createMap();
+    AdSize adSize = sizeList.get(0);
     if (adSize == AdSize.SMART_BANNER) {
       width = (int) PixelUtil.toDIPFromPixel(adSize.getWidthInPixels(mThemedReactContext));
       height = (int) PixelUtil.toDIPFromPixel(adSize.getHeightInPixels(mThemedReactContext));
@@ -199,12 +211,13 @@ public class RNPublisherBannerViewManager extends SimpleViewManager<ReactViewGro
   public void setAdUnitID(final ReactViewGroup view, final String adUnitID) {
     // store old banner size (even if not yet present and thus null)
     PublisherAdView oldAdView = (PublisherAdView) view.getChildAt(0);
-    AdSize[] adSizes = oldAdView.getAdSizes();
 
     attachNewAdView(view);
     PublisherAdView newAdView = (PublisherAdView) view.getChildAt(0);
     newAdView.setAdUnitId(adUnitID);
-    newAdView.setAdSizes(adSizes);
+
+    newAdView.setAdSizes(oldAdView.getAdSizes());
+
     loadAd(newAdView);
   }
 
@@ -266,6 +279,10 @@ public class RNPublisherBannerViewManager extends SimpleViewManager<ReactViewGro
       case "smartBanner":
         return AdSize.SMART_BANNER;
       default:
+        String[] sizeSubstring = adSize.split("x");
+        if (sizeSubstring.length == 2) {
+          return new AdSize(Integer.parseInt(sizeSubstring[0]), Integer.parseInt(sizeSubstring[1]));
+        }
         return AdSize.BANNER;
     }
   }

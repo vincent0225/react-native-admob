@@ -42,6 +42,10 @@
         return kGADAdSizeSmartBannerPortrait;
     } else if ([bannerSize isEqualToString:@"smartBannerLandscape"]) {
         return kGADAdSizeSmartBannerLandscape;
+    } else if ([[bannerSize componentsSeparatedByString:@"x"] count] == 2) {
+        CGFloat width = [[[bannerSize componentsSeparatedByString:@"x"] objectAtIndex:0] floatValue];
+        CGFloat height = [[[bannerSize componentsSeparatedByString:@"x"] objectAtIndex:1] floatValue];
+        return GADAdSizeFromCGSize(CGSizeMake(width, height));
     }
     else {
         return kGADAdSizeBanner;
@@ -50,8 +54,17 @@
 
 -(void)loadBanner {
     if (_adUnitID && _bannerSize && _customTarget) {
-        GADAdSize size = [self getAdSizeFromString:_bannerSize];
+        // multiple ad size
+        // Ref: https://developers.google.com/mobile-ads-sdk/docs/dfp/ios/banner#multiple_ad_sizes
+        
+        NSMutableArray *sizes = [[NSMutableArray alloc] init];
+        for (NSString *subString in [_bannerSize componentsSeparatedByString:@"|"]) {
+            [sizes addObject:NSValueFromGADAdSize([self getAdSizeFromString:subString])];
+        }
+        GADAdSize size = GADAdSizeFromNSValue([sizes objectAtIndex:0]);
+
         _bannerView = [[DFPBannerView alloc] initWithAdSize:size];
+        _bannerView.validAdSizes = sizes;
         [_bannerView setAppEventDelegate:self]; //added Admob event dispatch listener
         [_bannerView setAdSizeDelegate:self];
         if(!CGRectEqualToRect(self.bounds, _bannerView.bounds)) {

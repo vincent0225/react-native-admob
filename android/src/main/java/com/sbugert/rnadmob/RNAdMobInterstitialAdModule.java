@@ -3,22 +3,28 @@ package com.sbugert.rnadmob;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.Nullable;
+import android.util.Log;
 
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
+import com.facebook.react.bridge.ReadableMap;
+import com.facebook.react.bridge.ReadableMapKeySetIterator;
+import com.facebook.react.bridge.ReadableType;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 import com.google.android.gms.ads.AdListener;
 import com.google.android.gms.ads.AdRequest;
-import com.google.android.gms.ads.InterstitialAd;
+import com.google.android.gms.ads.doubleclick.PublisherAdRequest;
+import com.google.android.gms.ads.doubleclick.PublisherInterstitialAd;
 
 public class RNAdMobInterstitialAdModule extends ReactContextBaseJavaModule {
-  InterstitialAd mInterstitialAd;
+  PublisherInterstitialAd mInterstitialAd;
   String adUnitID;
   String testDeviceID;
+  ReadableMap customTarget;
   Callback requestAdCallback;
   Callback showAdCallback;
 
@@ -29,7 +35,7 @@ public class RNAdMobInterstitialAdModule extends ReactContextBaseJavaModule {
 
   public RNAdMobInterstitialAdModule(ReactApplicationContext reactContext) {
     super(reactContext);
-    mInterstitialAd = new InterstitialAd(reactContext);
+    mInterstitialAd = new PublisherInterstitialAd(reactContext);
 
     new Handler(Looper.getMainLooper()).post(new Runnable() {
       @Override
@@ -94,6 +100,11 @@ public class RNAdMobInterstitialAdModule extends ReactContextBaseJavaModule {
   }
 
   @ReactMethod
+  public void setCustomTarget(ReadableMap customTarget) {
+    this.customTarget = customTarget;
+  }
+
+  @ReactMethod
   public void requestAd(final Callback callback) {
     new Handler(Looper.getMainLooper()).post(new Runnable() {
       @Override
@@ -102,7 +113,8 @@ public class RNAdMobInterstitialAdModule extends ReactContextBaseJavaModule {
           callback.invoke("Ad is already loaded."); // TODO: make proper error
         } else {
           requestAdCallback = callback;
-          AdRequest.Builder adRequestBuilder = new AdRequest.Builder();
+          PublisherAdRequest.Builder adRequestBuilder = new PublisherAdRequest.Builder();
+
           if (testDeviceID != null){
             if (testDeviceID.equals("EMULATOR")) {
               adRequestBuilder = adRequestBuilder.addTestDevice(AdRequest.DEVICE_ID_EMULATOR);
@@ -110,7 +122,20 @@ public class RNAdMobInterstitialAdModule extends ReactContextBaseJavaModule {
               adRequestBuilder = adRequestBuilder.addTestDevice(testDeviceID);
             }
           }
-          AdRequest adRequest = adRequestBuilder.build();
+
+          if (customTarget != null){
+            ReadableMapKeySetIterator iterator = customTarget.keySetIterator();
+            while(iterator.hasNextKey()) {
+              String key = iterator.nextKey();
+              if (customTarget.getType(key) == ReadableType.String) {
+                adRequestBuilder = adRequestBuilder.addCustomTargeting(key, customTarget.getString(key));
+              } else {
+                Log.d("PublisherAdBanner", "Only String Custom Target was handled");
+              }
+            }
+          }
+
+          PublisherAdRequest adRequest = adRequestBuilder.build();
           mInterstitialAd.loadAd(adRequest);
         }
       }

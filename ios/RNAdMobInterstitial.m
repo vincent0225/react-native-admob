@@ -1,9 +1,10 @@
 #import "RNAdMobInterstitial.h"
 
 @implementation RNAdMobInterstitial {
-  GADInterstitial  *_interstitial;
+  DFPInterstitial  *_interstitial;
   NSString *_adUnitID;
   NSString *_testDeviceID;
+  NSDictionary *_customTarget;
   RCTResponseSenderBlock _requestAdCallback;
   RCTResponseSenderBlock _showAdCallback;
 }
@@ -29,15 +30,20 @@ RCT_EXPORT_METHOD(setTestDeviceID:(NSString *)testDeviceID)
   _testDeviceID = testDeviceID;
 }
 
+RCT_EXPORT_METHOD(setCustomTarget:(NSDictionary *)customTarget)
+{
+  _customTarget = customTarget;
+}
+
 RCT_EXPORT_METHOD(requestAd:(RCTResponseSenderBlock)callback)
 {
   if ([_interstitial hasBeenUsed] || _interstitial == nil) {
     _requestAdCallback = callback;
 
-    _interstitial = [[GADInterstitial alloc] initWithAdUnitID:_adUnitID];
+    _interstitial = [[DFPInterstitial alloc] initWithAdUnitID:_adUnitID];
     _interstitial.delegate = self;
 
-    GADRequest *request = [GADRequest request];
+    DFPRequest *request = [DFPRequest request];
     if(_testDeviceID) {
       if([_testDeviceID isEqualToString:@"EMULATOR"]) {
         request.testDevices = @[kGADSimulatorID];
@@ -45,6 +51,10 @@ RCT_EXPORT_METHOD(requestAd:(RCTResponseSenderBlock)callback)
         request.testDevices = @[_testDeviceID];
       }
     }
+    if(_customTarget) {
+      request.customTargeting = _customTarget;
+    }
+    
     [_interstitial loadRequest:request];
   } else {
     callback(@[@"Ad is already loaded."]); // TODO: make proper error via RCTUtils.h

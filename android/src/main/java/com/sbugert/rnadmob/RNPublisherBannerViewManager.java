@@ -140,6 +140,11 @@ public class RNPublisherBannerViewManager extends SimpleViewManager<ReactViewGro
         }
 
         mEventEmitter.receiveEvent(view.getId(), Events.EVENT_ERROR.toString(), event);
+
+        WritableMap resizeEvent = Arguments.createMap();
+        resizeEvent.putDouble("width", 0);
+        resizeEvent.putDouble("height", 0);
+        mEventEmitter.receiveEvent(view.getId(), Events.EVENT_SIZE_CHANGE.toString(), resizeEvent);
       }
 
       @Override

@@ -112,13 +112,14 @@ public class RNPublisherBannerViewManager extends SimpleViewManager<ReactViewGro
         int top = adView.getTop();
         adView.measure(width, height);
         adView.layout(left, top, left + width, top + height);
-        mEventEmitter.receiveEvent(view.getId(), Events.EVENT_RECEIVE_AD.toString(), null);
 
         // send measurements to js to style the AdView in react
         WritableMap event = Arguments.createMap();
         event.putDouble("width", adView.getAdSize().getWidth());
         event.putDouble("height", adView.getAdSize().getHeight());
         mEventEmitter.receiveEvent(view.getId(), Events.EVENT_SIZE_CHANGE.toString(), event);
+
+        mEventEmitter.receiveEvent(view.getId(), Events.EVENT_RECEIVE_AD.toString(), null);
       }
 
       @Override

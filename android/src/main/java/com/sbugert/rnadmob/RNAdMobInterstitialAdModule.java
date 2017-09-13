@@ -21,6 +21,7 @@ import com.google.android.gms.ads.doubleclick.PublisherAdRequest;
 import com.google.android.gms.ads.doubleclick.PublisherInterstitialAd;
 
 public class RNAdMobInterstitialAdModule extends ReactContextBaseJavaModule {
+  private final ReactApplicationContext mReactContext;
   PublisherInterstitialAd mInterstitialAd;
   String adUnitID;
   String testDeviceID;
@@ -35,7 +36,15 @@ public class RNAdMobInterstitialAdModule extends ReactContextBaseJavaModule {
 
   public RNAdMobInterstitialAdModule(ReactApplicationContext reactContext) {
     super(reactContext);
-    mInterstitialAd = new PublisherInterstitialAd(reactContext);
+    this.mReactContext = reactContext;
+  }
+
+  private void initializeInterstitialAd() {
+    mInterstitialAd = new PublisherInterstitialAd(mReactContext);
+
+    if (adUnitID != null) {
+      mInterstitialAd.setAdUnitId(adUnitID);
+    }
 
     new Handler(Looper.getMainLooper()).post(new Runnable() {
       @Override
@@ -85,13 +94,14 @@ public class RNAdMobInterstitialAdModule extends ReactContextBaseJavaModule {
       }
     });
   }
+
   private void sendEvent(String eventName, @Nullable WritableMap params) {
     getReactApplicationContext().getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(eventName, params);
   }
 
   @ReactMethod
   public void setAdUnitID(String adUnitID) {
-    mInterstitialAd.setAdUnitId(adUnitID);
+    this.adUnitID = adUnitID;
   }
 
   @ReactMethod
@@ -109,7 +119,8 @@ public class RNAdMobInterstitialAdModule extends ReactContextBaseJavaModule {
     new Handler(Looper.getMainLooper()).post(new Runnable() {
       @Override
       public void run () {
-        if (mInterstitialAd.isLoaded() || mInterstitialAd.isLoading()) {
+
+        if (mInterstitialAd != null && (mInterstitialAd.isLoaded() || mInterstitialAd.isLoading()) ) {
           callback.invoke("Ad is already loaded."); // TODO: make proper error
         } else {
           requestAdCallback = callback;
@@ -135,6 +146,11 @@ public class RNAdMobInterstitialAdModule extends ReactContextBaseJavaModule {
             }
           }
 
+          if (mInterstitialAd != null) {
+            mInterstitialAd = null; // Destroy Last InterstitialAd
+          }
+          initializeInterstitialAd();
+
           PublisherAdRequest adRequest = adRequestBuilder.build();
           mInterstitialAd.loadAd(adRequest);
         }
@@ -142,6 +158,8 @@ public class RNAdMobInterstitialAdModule extends ReactContextBaseJavaModule {
     });
   }
 
+
+  // Assume method was called after request ads callback fired.
   @ReactMethod
   public void showAd(final Callback callback) {
     new Handler(Looper.getMainLooper()).post(new Runnable() {

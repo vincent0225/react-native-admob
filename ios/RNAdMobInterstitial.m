@@ -89,6 +89,8 @@ RCT_EXPORT_METHOD(isReady:(RCTResponseSenderBlock)callback)
 didFailToReceiveAdWithError:(GADRequestError *)error {
   [self.bridge.eventDispatcher sendDeviceEventWithName:@"interstitialDidFailToLoad" body:@{@"name": [error description]}];
   _requestAdCallback(@[[error description]]);
+
+  _interstitial = nil;
 }
 
 - (void)interstitialWillPresentScreen:(GADInterstitial *)ad {

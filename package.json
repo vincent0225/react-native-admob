@@ -5,6 +5,9 @@
   "author": "Simon Bugert <simon.bugert@gmail.com>",
   "main": "index.js",
   "license": "BSD-2-Clause",
+  "dependencies": {
+    "prop-types": "^15.6.0"
+  },
   "repository": {
     "type": "git",
     "url": "git@github.com:sbugert/react-native-admob.git"

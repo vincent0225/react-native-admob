@@ -77,8 +77,7 @@ AdMobBanner.propTypes = {
    * AdMob iOS library events
    */
   adViewDidReceiveAd: PropTypes.func,
-  didFailToReceiveAdWithError: 
-  func,
+  didFailToReceiveAdWithError: PropTypes.func,
   adViewWillPresentScreen: PropTypes.func,
   adViewWillDismissScreen: PropTypes.func,
   adViewDidDismissScreen: PropTypes.func,

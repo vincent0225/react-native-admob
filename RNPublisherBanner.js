@@ -5,6 +5,7 @@ import {
   View,
   NativeEventEmitter,
 } from 'react-native';
+import PropTypes from 'prop-types';
 
 const RNBanner = requireNativeComponent('RNAdMobDFP', PublisherBanner);
 
